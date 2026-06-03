@@ -184,6 +184,10 @@ const emptyForm: ItemFormState = {
   saveAsDraft: false,
 };
 
+const localCalendarItemsKey = "focus-forge.calendar-items";
+const localCalendarItemPrefix = "local-calendar-item-";
+const localCalendarNotice = "Cloud calendar is unavailable, so items are being saved on this device.";
+
 export default function CalendarPage() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -244,7 +248,14 @@ export default function CalendarPage() {
         }
       } catch (loadError) {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : "Calendar items could not be loaded.");
+          const message = loadError instanceof Error ? loadError.message : "Calendar items could not be loaded.";
+
+          if (canUseLocalCalendar(message)) {
+            setItems(readLocalCalendarItems());
+            setError(localCalendarNotice);
+          } else {
+            setError(message);
+          }
         }
       } finally {
         if (active) {
@@ -335,12 +346,40 @@ export default function CalendarPage() {
       });
       setDialogOpen(false);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "The item could not be saved.");
+      const message = saveError instanceof Error ? saveError.message : "The item could not be saved.";
+
+      if (canUseLocalCalendar(message)) {
+        const localItem = createLocalCalendarItem(form, payload);
+
+        setItems((current) => {
+          const next = form.id
+            ? current.map((item) => (item.id === form.id ? localItem : item))
+            : [...current, localItem];
+
+          writeLocalCalendarItems(next.filter((item) => item.id.startsWith(localCalendarItemPrefix)));
+          return next;
+        });
+        setError(localCalendarNotice);
+        setDialogOpen(false);
+        return;
+      }
+
+      setError(message);
     }
   }
 
   async function deleteItem() {
     if (!form.id) return;
+
+    if (form.id.startsWith(localCalendarItemPrefix)) {
+      setItems((current) => {
+        const next = current.filter((item) => item.id !== form.id);
+        writeLocalCalendarItems(next.filter((item) => item.id.startsWith(localCalendarItemPrefix)));
+        return next;
+      });
+      setDialogOpen(false);
+      return;
+    }
 
     try {
       setError(null);
@@ -367,6 +406,17 @@ export default function CalendarPage() {
     }
 
     setItems((current) => current.map((item) => (item.id === itemId ? { ...item, scheduled_date: dateKey } : item)));
+
+    if (itemId.startsWith(localCalendarItemPrefix)) {
+      setItems((current) => {
+        const next = current.map((item) =>
+          item.id === itemId ? { ...item, scheduled_date: dateKey, updated_at: new Date().toISOString() } : item
+        );
+        writeLocalCalendarItems(next.filter((item) => item.id.startsWith(localCalendarItemPrefix)));
+        return next;
+      });
+      return;
+    }
 
     try {
       const response = await fetch(`/api/calendar-items/${itemId}`, {
@@ -876,6 +926,109 @@ function DraftItem({ item, onOpen }: { item: CalendarItem; onOpen: (item: Calend
       </div>
     </button>
   );
+}
+
+function createLocalCalendarItem(
+  form: ItemFormState,
+  payload: {
+    title: string;
+    description: string;
+    item_type: "task" | "reminder";
+    category: string;
+    color: ColorKey;
+    scheduled_date: string | null;
+    scheduled_time: string | null;
+    status: "open" | "in_progress" | "done" | "snoozed";
+    priority: "low" | "medium" | "high";
+    reminder_email: string;
+    reminder_lead_minutes: string;
+  }
+): CalendarItem {
+  const now = new Date().toISOString();
+  const existing = form.id ? readLocalCalendarItems().find((item) => item.id === form.id) : undefined;
+
+  return {
+    id: existing?.id ?? `${localCalendarItemPrefix}${createLocalId()}`,
+    title: payload.title.trim(),
+    description: payload.description.trim() || null,
+    item_type: payload.item_type,
+    category: payload.category,
+    color: payload.color,
+    scheduled_date: payload.scheduled_date,
+    scheduled_time: payload.scheduled_time,
+    status: payload.status,
+    priority: payload.priority,
+    reminder_email: payload.reminder_email.trim() || null,
+    reminder_lead_minutes: parseReminderLeadMinutes(payload.reminder_lead_minutes),
+    created_at: existing?.created_at ?? now,
+    updated_at: now,
+  };
+}
+
+function readLocalCalendarItems() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const value = window.localStorage.getItem(localCalendarItemsKey);
+    const parsed = value ? JSON.parse(value) : [];
+
+    return Array.isArray(parsed) ? parsed.filter(isCalendarItem) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalCalendarItems(items: CalendarItem[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(localCalendarItemsKey, JSON.stringify(items));
+}
+
+function canUseLocalCalendar(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("calendar_items") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("failed to fetch")
+  );
+}
+
+function isCalendarItem(value: unknown): value is CalendarItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const item = value as CalendarItem;
+
+  return (
+    typeof item.id === "string" &&
+    typeof item.title === "string" &&
+    (item.scheduled_date === null || typeof item.scheduled_date === "string") &&
+    typeof item.created_at === "string" &&
+    typeof item.updated_at === "string"
+  );
+}
+
+function createLocalId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function parseReminderLeadMinutes(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function sortCalendarItems(first: CalendarItem, second: CalendarItem) {
