@@ -1,13 +1,13 @@
 # Focus Forge UI Theme
 
-Focus Forge now uses a cyberpunk command-center style: dark, high-contrast, compact, and energetic. The product should feel like a neural workspace for fast thinking, not a copied Notion clone.
+Focus Forge now uses a cyberpunk command-center style: dark, high-contrast, compact, fresh, and highly colorful. The product should feel like a neural workspace for fast thinking, not a copied Notion clone.
 
 ## Color Palette
 
-- Background: deep midnight navy with a subtle grid treatment for a digital canvas feel.
-- Surfaces: translucent blue-black panels with cyan-tinted borders and restrained glow shadows.
-- Primary: electric cyan for navigation focus, system status, and precision controls.
-- Secondary accents: fuchsia, lime, violet, rose, amber, and indigo for icon identity and board objects.
+- Background: vivid midnight indigo with cyan, pink, violet, and lime grid energy for a digital canvas feel.
+- Surfaces: translucent blue-violet panels with brighter cyan-tinted borders and controlled glow shadows.
+- Primary: bright electric cyan for navigation focus, system status, and precision controls.
+- Secondary accents: pink, lime, violet, rose, amber, emerald, and indigo for icon identity, group contrast, and board objects.
 - Borders: low-opacity neon cyan. Prefer thin borders and glows over heavy shadows.
 
 ## Typography
@@ -25,10 +25,10 @@ Focus Forge now uses a cyberpunk command-center style: dark, high-contrast, comp
 
 ## Sidebar Rules
 
-- Group navigation into command-oriented sections: Command, Create, and System.
-- Menu rows stay compact with colorful Lucide icons and neon active states.
+- Group navigation into visible command panels with labels attached to their menu options: Command, Create, and System.
+- Menu rows stay extra compact with smaller labels, smaller icons, colorful Lucide accents, and neon active states. The desktop sidebar defaults to a collapsed icon rail and expands from an explicit menu button.
 - Footer controls should read like workspace/system context, not a marketing block.
-- Future collapsed mode should keep icon glow, active state, and accessible labels/tooltips.
+- Collapsed mode keeps icon glow, active states, title tooltips, and accessible labels. Mobile uses a drawer opened from the header menu button.
 
 ## Layout Principles
 
@@ -36,3 +36,5 @@ Focus Forge now uses a cyberpunk command-center style: dark, high-contrast, comp
 - Lean into realistic workspace modules: task board, notes, AI brief, spaces, and whiteboard preview.
 - Use neon accents as information signals, not decoration everywhere.
 - Avoid large gradients, oversized hero sections, or stock marketing composition.
+
+
