@@ -40,7 +40,7 @@ const navGroups = [
   {
     label: "Create",
     items: [
-      { name: "Task / Kanban", href: "#", icon: Columns3, color: "text-emerald-200" },
+      { name: "Task / Kanban", href: "/kanban", icon: Columns3, color: "text-emerald-200" },
       { name: "Notes", href: "#", icon: StickyNote, color: "text-amber-200" },
       { name: "Whiteboard", href: "#", icon: PenTool, color: "text-rose-200" },
       { name: "Pages / Spaces", href: "#", icon: Layers3, color: "text-indigo-200" },
